@@ -1,3 +1,4 @@
+.arch armv8-a 
 .section .text
 .global main
 
@@ -28,14 +29,13 @@ print_loop:
   cmp x10, #10                 // (elements) counter >= size of array ?  -- if we already printed all elements
   b.ge bsort  
 
-  stp x29, x30, [sp, #-16]!    // save the stack frame
-  mov x29, sp
+  stp x4, x10, [sp, #-16]!     // store x4, x10 before calling printf
   adrp x0, format              // %d
   add x0, x0, :lo12:format
   ldr w1, [x4, x10, lsl #2]    // get array element
   bl printf
 
-  ldp x29, x30, [sp], #16      // restore stack frame
+  ldp x4, x10, [sp], #16
   add x10, x10, #1             // counter += 1
   b print_loop
 
@@ -47,8 +47,8 @@ outer_loop:
 inner_loop:
     ldr w8, [x6]                // load consecutive numbers
     ldr w9, [x6, #4]
-    cmp w8, w9                  // n-1 <= n ?
-    b.le no_swap
+    cmp w8, w9                  // n-1 >= n ?
+    b.ge no_swap
 
     str w9, [x6]                // swap!
     str w8, [x6, #4]
@@ -68,14 +68,13 @@ print_sorted_loop:              // same thing as before
   cmp x10, #10
   b.ge end
   
-  stp x29, x30, [sp, #-16]!
-  mov x29, sp
+  stp x4, x10, [sp, #-16]!
   adrp x0, format
   add x0, x0, :lo12:format
   ldr w1, [x4, x10, lsl #2]
   bl printf
 
-  ldp x29, x30, [sp], #16
+  ldp x4, x10, [sp], #16
   add x10, x10, #1
   b print_sorted_loop
 
