@@ -9,6 +9,7 @@ main:
   mov x4, sp                  // x4 -> start of array
   add x5, sp, #40             // x5 -> end of array 
   mov x10, #0                 // x10 -> (context) counter
+  mov x11, #0                 // x11 -> random number buffer in this context
   b init_array
 
   ldp x29, x30, [sp], #16
@@ -18,7 +19,13 @@ init_array:
   cmp x10, #10                 // (elements) counter >= array size ?
   b.ge print                   // >= print the already initialized array
                                // <
-  str w10, [x4, x10, lsl #2]   // x4[x10] = w10
+  mov x0, sp                   // use the stack to save temporarily
+  mov x1, #4
+  mov x2, #0
+  mov x8, #278                 // getrandom()
+  svc #0
+  ldr w11, [sp]                // load the value in [sp] in w11
+  str w11, [x4, x10, lsl #2]   // x4[x10] = w10
   add x10, x10, #1             // increment counter
   b init_array
 
@@ -29,7 +36,7 @@ print_loop:
   cmp x10, #10                 // (elements) counter >= size of array ?  -- if we already printed all elements
   b.ge bsort  
 
-  stp x4, x10, [sp, #-16]!     // store x4, x10 before calling printf
+  stp x4, x10, [sp, #-16]!
   adrp x0, format              // %d
   add x0, x0, :lo12:format
   ldr w1, [x4, x10, lsl #2]    // get array element
@@ -62,9 +69,14 @@ no_swap:
     cmp x10, #0                 // outer loop iterations > 0 ?
     b.gt outer_loop
 
-print_sorted:
-  mov x10, #0                   // i don't think i need this, bcs if we reach here, x10 gotta be 0
-print_sorted_loop:              // same thing as before  
+print_newline:
+  stp x4, x10, [sp, #-16]!
+  adrp x0, newline
+  add x0, x0, :lo12:newline
+  bl printf
+  ldp x4, x10, [sp], #16
+
+print_sorted:                   // same thing as before 
   cmp x10, #10
   b.ge end
   
@@ -76,7 +88,7 @@ print_sorted_loop:              // same thing as before
 
   ldp x4, x10, [sp], #16
   add x10, x10, #1
-  b print_sorted_loop
+  b print_sorted
 
 end:
   add sp, sp, #48
@@ -88,3 +100,6 @@ end:
 .align 8
 format:
   .asciz "%d\n"
+
+newline:
+  .asciz "\n"
